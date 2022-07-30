@@ -77,7 +77,7 @@ clean:
 
 ################################################################################
 # Download 3rd-party libraries
-EXTRA_LIB   += ./3rd_party/nlohmann_json/single_include
+EXTRA_LIB   += ./3rd_party/nlohmann_json
 ./3rd_party/nlohmann_json:
 	@echo "-DOWNLOAD $(notdir $@)"
 	mkdir -p $(dir $@)

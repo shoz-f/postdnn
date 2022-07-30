@@ -11,7 +11,7 @@
 #ifndef _POSTPROCESS_H
 #define _POSTPROCESS_H
 
-#include "nlohmann/json.hpp"
+#include "single_include/nlohmann/json.hpp"
 using json = nlohmann::json;
 
 /**************************************************************************}}}**
