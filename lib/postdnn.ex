@@ -88,4 +88,36 @@ defmodule PostDNN do
 
     Nx.concatenate([grid, pitch], axis: 1)
   end
+
+  @doc """
+  Take records satisfying the predicate function `pred?` from table.
+  
+  ## Parameters
+
+    * tensor - 2rank tensor (table). each row represents a record.
+    * pred? - predicate function to sieve records. a function that returns a rank1
+    tensor with '1' in the index position of records to be kept and
+    '0' in the index position of those to be discarded.
+
+  ## Examples
+  
+    ```
+    pred? = fn tensor -> Nx.greater(tensor, 0.2) end
+    sieve(table, pred?)
+    ```
+  """
+  def sieve(tensor, pred?) do
+    # apply the predicate to tensor to get the judgment for each record (row)
+    judge = pred?.(tensor)
+
+    # count the number of records for which the judgement was YES(1).
+    count = Nx.sum(judge) |> Nx.to_number()
+
+    # take only records for which the judgement is YES.
+    index =
+      Nx.argsort(judge, direction: :desc)
+      |> Nx.slice_along_axis(0, count)
+
+    Nx.take(tensor, index)
+  end
 end

@@ -4,7 +4,7 @@ defmodule PostDNN.MixProject do
   def project do
     [
       app: :postdnn,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       make_executable: "make",
@@ -33,7 +33,7 @@ defmodule PostDNN.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:poison, "~> 3.1"},
+      {:poison, "~> 5.0"},
       {:elixir_make, "~> 0.6.2", runtime: false},
       {:nx, "~> 0.2.1"},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false}
