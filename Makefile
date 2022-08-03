@@ -77,11 +77,13 @@ clean:
 
 ################################################################################
 # Download 3rd-party libraries
+URL_NLOHMANN_JSON = https://github.com/nlohmann/json/releases/download/v3.7.3/
+
 EXTRA_LIB   += ./3rd_party/nlohmann_json
 ./3rd_party/nlohmann_json:
 	@echo "-DOWNLOAD $(notdir $@)"
-	mkdir -p $(dir $@)
-	git clone https://github.com/nlohmann/json.git $@
+	mkdir -p $@
+	cd $@; wget -nc $(URL_NLOHMANN_JSON)/include.zip; unzip include.zip; rm include.zip
 
 setup: $(EXTRA_LIB)
 
