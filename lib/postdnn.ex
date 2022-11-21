@@ -19,10 +19,11 @@ defmodule PostDNN do
       * score_threshold: - score cutoff threshold
       * sigma:           - soft IOU parameter
       * boxrepr:         - type of box representation
-         * 0 - center pos and width/height
-         * 1 - top-left pos and width/height
-         * 2 - top-left and bottom-right corner pos
+         * :center  - center pos and width/height
+         * :topleft - top-left pos and width/height
+         * :corner  - top-left and bottom-right corner pos
       * label: map       - replace "number" with "name" label according to a map %{0 => "foo", 1 => "baa", ...}
+      * label: path      - given a file path, read it and create the label map
 
   ## Examples
 
@@ -33,7 +34,14 @@ defmodule PostDNN do
     ```
   """
   def non_max_suppression_multi_class({num_boxes, num_class}, boxes, scores, opts \\ []) do
-    label = Keyword.get(opts, :label)
+    label = case Keyword.get(opts, :label) do
+      map when is_map(map) -> map
+      path when is_binary(path) ->
+        (for item <- File.stream!(path) do String.trim_trailing(item) end)
+        |> Enum.with_index(&{&2, &1})
+        |> Enum.into(%{})
+      any -> any
+    end
 
     box_repr = case Keyword.get(opts, :boxrepr, :center) do
       :center  -> 0
@@ -64,6 +72,28 @@ defmodule PostDNN do
   end
   defp labeling(nms_result, _),  do: nms_result
 
+
+  @doc """
+  Adjust NMS result to aspect of the input image. (letterbox)
+  
+  ## Parameters:
+  
+    * res - NMS result %{}
+    * [rx, ry] - aspect ratio of the input image
+  """
+  def adjust2letterbox(res, [rx, ry] \\ [1.0, 1.0]) do
+    Enum.reduce(Map.keys(res), res, fn key,map ->
+      Map.update!(map, key, &Enum.map(&1, fn [score, x1, y1, x2, y2] ->
+        x1 = if x1 < 0.0, do: 0.0, else: x1
+        y1 = if y1 < 0.0, do: 0.0, else: y1
+        x2 = if x2 > 1.0, do: 1.0, else: x2
+        y2 = if y2 > 1.0, do: 1.0, else: y2
+        [score, x1/rx, y1/ry, x2/rx, y2/ry]
+      end))
+    end)
+  end
+
+
   @doc """
   Create a list of (x,y) coordinates for mesh grid points - top-left of each grid.
   
@@ -87,7 +117,7 @@ defmodule PostDNN do
 
   def meshgrid(shape, pitches, opts) when is_list(pitches) do
     Enum.map(pitches, &meshgrid(shape, &1, opts))
-    |> Nx.concatenate()
+    |> Nx.concatenate(axis: 1)
   end
 
   def meshgrid({w, h}, pitch, opts) when w >= 1 and h >= 1 do
@@ -95,8 +125,8 @@ defmodule PostDNN do
     n = trunc(Float.ceil(w/pitch))
 
     {scale, pitch} = if :normalize in opts,
-        do:   {Nx.tensor([pitch/w, pitch/h]), 1.0},
-        else: {Nx.tensor([pitch, pitch]), pitch}
+        do:   {Nx.tensor([pitch/w, pitch/h]), Nx.tensor([pitch/w, pitch/h])},
+        else: {Nx.tensor([pitch, pitch]), Nx.tensor([pitch, pitch])}
 
     # grid coodinates list
     grid = if :rowfirst in opts do
@@ -109,12 +139,13 @@ defmodule PostDNN do
       |> Nx.multiply(scale)
 
     # pitch list
-    pitch = Nx.broadcast(pitch, {m*n, 1})
+    pitch = Nx.broadcast(pitch, {m*n, 2})
       |> Nx.as_type({:f, 32})
 
     Nx.concatenate([grid, pitch], axis: 1)
     |> (&if :transpose in opts, do: Nx.transpose(&1), else: &1).()
   end
+
 
   @doc """
   Take records satisfying the predicate function `pred?` from table.
