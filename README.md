@@ -19,10 +19,10 @@ You can install it by adding `postdnn` to the `mix.exs` dependency list as follo
 ```elixir
 def deps do
   [
-    {:postdnn, "~> 0.1.0"}
+    {:postdnn, "~> 0.1.3"}
   ]
 end
 ```
 
 ## License
-TflInterp is licensed under the Apache License Version 2.0.
+PostDNN is licensed under the Apache License Version 2.0.
