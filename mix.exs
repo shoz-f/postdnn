@@ -4,7 +4,7 @@ defmodule PostDNN.MixProject do
   def project do
     [
       app: :postdnn,
-      version: "0.1.2",
+      version: "0.1.3",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       make_executable: "make",
@@ -35,7 +35,7 @@ defmodule PostDNN.MixProject do
     [
       {:poison, "~> 5.0"},
       {:elixir_make, "~> 0.6.2", runtime: false},
-      {:nx, "~> 0.2.1"},
+      {:nx, "~> 0.4.0"},
       {:ex_doc, "~> 0.24", only: :dev, runtime: false}
     ]
   end

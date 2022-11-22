@@ -28,3 +28,4 @@ onnx_interp-*.tar
 *~
 toolchains/
 3rd_party/
+*.inc
