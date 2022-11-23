@@ -1,5 +1,11 @@
 # Changelog
 
+## Release 0.1.3(Nov 23 2022)
+
+  * Major Features and Improvements
+    * added "adjust2letterbox" which adjust the bbox of NMS result to input image aspect.
+    * added the feature to read labels from the file in 'non_max_suppression_multi_class'.
+
 ## Release 0.1.2(Aug 6 2022)
 
   * Major Features and Improvements
