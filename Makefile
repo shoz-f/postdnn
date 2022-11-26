@@ -83,7 +83,7 @@ EXTRA_LIB   += ./3rd_party/nlohmann_json
 ./3rd_party/nlohmann_json:
 	@echo "-DOWNLOAD $(notdir $@)"
 	mkdir -p $@
-	cd $@; wget -nc $(URL_NLOHMANN_JSON)/include.zip; unzip include.zip; rm include.zip
+	cd $@; wget -nc -q $(URL_NLOHMANN_JSON)/include.zip; unzip -q include.zip; rm include.zip
 
 setup: $(EXTRA_LIB)
 
