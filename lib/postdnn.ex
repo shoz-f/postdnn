@@ -155,6 +155,64 @@ defmodule PostDNN do
 
 
   @doc """
+  Create a priorbox which is a list of the coodinate of the boxes in each grid.
+  
+  ## Parameters
+  
+    * shape - tupple {width, height} for overall size.
+    * pitch_boxes - list of tupples which have grid spacing and boxes size.
+    * opts
+      * :transpose - return transposed table
+      * :normalize - normalize (x,y) cordinate to {0.0..1.0}
+      * :rowfirst - change to row scan first. (default: column scan first)
+  
+  ## Examples
+  
+    ```
+    priorbox({416,416}, [{8, [8, 10, 15]}, {16, [16, 20]}], [:normalize])
+    ```
+  """
+  def priorbox(shape, pitch_boxes, opts \\ [])
+  
+  def priorbox(shape, pitch_boxes, opts) when is_list(pitch_boxes) do
+    Enum.map(pitch_boxes, &priorbox(shape, &1, opts))
+    |> Nx.concatenate(axis: (if :transpose in opts, do: 1, else: 0))
+  end
+
+  def priorbox({w, h}, {pitch, boxes}, opts) when w >= 1 and h >= 1 do
+    m = trunc(Float.ceil(h/pitch))
+    n = trunc(Float.ceil(w/pitch))
+
+    scaling = if :normalize in opts do
+        fn x -> Nx.tensor([x/w, x/h], type: :f32) end
+      else
+        fn x -> Nx.tensor([x, x], type: :f32) end
+      end
+
+    # grid coodinates list
+    grid = if :rowfirst in opts do
+        (for x <- 0..(n-1), y <- 0..(m-1), do: [x, y])
+      else
+        (for y <- 0..(m-1), x <- 0..(n-1), do: [x, y])
+      end
+      |> Nx.tensor(type: :f32)
+      |> Nx.add(0.5)
+      |> Nx.multiply(scaling.(pitch))
+
+    # priobox list
+    Enum.flat_map(boxes, fn side ->
+      [
+        grid,                                      # grid
+        Nx.broadcast(scaling.(side), {m*n, 2})   # box size
+      ]
+    end)
+    |> Nx.concatenate(axis: 1)
+    |> Nx.reshape({:auto, 4})
+    |> (&if :transpose in opts, do: Nx.transpose(&1), else: &1).()
+  end
+
+
+  @doc """
   Take records satisfying the predicate function `pred?` from table.
   
   ## Parameters
@@ -171,7 +229,9 @@ defmodule PostDNN do
     sieve(table, pred?)
     ```
   """
-  def sieve(tensor, pred?) do
+  require Nx
+
+  def sieve(tensor, pred?) when Nx.is_tensor(tensor) do
     # apply the predicate to tensor to get the judgment for each record (row)
     judge = pred?.(tensor)
 
@@ -185,4 +245,38 @@ defmodule PostDNN do
 
     Nx.take(tensor, index)
   end
+
+  def sieve(tensor_a, [], pred?), do: sieve(tensor_a, pred?)
+
+  def sieve(tensor_a, list, pred?) when Nx.is_tensor(tensor_a) and is_list(list) do
+    # precondition: each tensor must have same size of axis_0.
+    axis_0 = Nx.axis_size(tensor_a, 0)
+    unless Enum.all?(list, fn x -> Nx.axis_size(x, 0) == axis_0 end),
+      do: "mismatch axis 0 of tensors"
+
+    # apply the predicate to tensor to get the judgment for each record (row)
+    judge = pred?.(tensor_a)
+
+    # count the number of records for which the judgement was YES(1).
+    count = Nx.sum(judge) |> Nx.to_number()
+
+    # take only records for which the judgement is YES.
+    index =
+      Nx.argsort(judge, direction: :desc)
+      |> Nx.slice_along_axis(0, count)
+
+    Enum.map([tensor_a|list], &Nx.take(&1, index))
+  end
+
+  @doc """
+  Bounds value in {lower, upper}.
+  """
+  def bounds(x, {_lower, _upper}=lower_upper) when is_list(x),
+    do: x |> Enum.map(&bounds(&1, lower_upper))
+  
+  def bounds(x, {lower, upper}) when is_number(x),
+    do: x |> max(lower) |> min(upper)
+
+  def bounds(x, {lower, upper}) when Nx.is_tensor(x),
+    do: x |> Nx.max(lower) |> Nx.min(upper)
 end
