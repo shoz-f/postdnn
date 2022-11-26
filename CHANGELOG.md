@@ -1,5 +1,13 @@
 # Changelog
 
+## Release 0.1.4(Nov 26 2022)
+
+  * Major Features and Improvements
+    * added "priorbox" which generate boxes to recognize image.
+    * added multi tensors sieve. (experimental)
+    * fixed IOU filtering in NMS.
+    * supress message about downloading.
+
 ## Release 0.1.3(Nov 23 2022)
 
   * Major Features and Improvements
