@@ -290,7 +290,7 @@ defmodule PostDNN do
   Clamp value within {lower, upper}.
   """
   def clamp(x, {_lower, _upper}=lower_upper) when is_list(x),
-    do: x |> Enum.map(&bounds(&1, lower_upper))
+    do: x |> Enum.map(&clamp(&1, lower_upper))
   
   def clamp(x, {lower, upper}) when is_number(x),
     do: x |> max(lower) |> min(upper)
