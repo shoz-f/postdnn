@@ -124,7 +124,7 @@ defmodule PostDNN do
 
   def meshgrid(shape, pitches, opts) when is_list(pitches) do
     Enum.map(pitches, &meshgrid(shape, &1, opts))
-    |> Nx.concatenate(axis: 1)
+    |> Nx.concatenate(axis: (if :transpose in opts, do: 1, else: 0))
   end
 
   def meshgrid({w, h}, pitch, opts) when w >= 1 and h >= 1 do
@@ -141,13 +141,13 @@ defmodule PostDNN do
       else
         (for y <- 0..(m-1), x <- 0..(n-1), do: [x, y])
       end
-      |> Nx.tensor(type: {:f, 32})
+      |> Nx.tensor(type: :f32)
       |> (&if :center in opts, do: Nx.add(&1, 0.5), else: &1).()
       |> Nx.multiply(scale)
 
     # pitch list
     pitch = Nx.broadcast(pitch, {m*n, 2})
-      |> Nx.as_type({:f, 32})
+      |> Nx.as_type(:f32)
 
     Nx.concatenate([grid, pitch], axis: 1)
     |> (&if :transpose in opts, do: Nx.transpose(&1), else: &1).()
@@ -246,6 +246,24 @@ defmodule PostDNN do
     Nx.take(tensor, index)
   end
 
+  @doc """
+  Take records satisfying the predicate function `pred?` from tables.
+  
+  ## Parameters
+
+    * tensor - 2rank tensor (table). each row represents a record.
+    * list - list of tensors which has same size of axis 0.
+    * pred? - predicate function to sieve records. a function that returns a rank1
+    tensor with '1' in the index position of records to be kept and
+    '0' in the index position of those to be discarded.
+
+  ## Examples
+  
+    ```
+    pred? = fn tensor -> Nx.greater(tensor, 0.2) end
+    sieve(table1, [table2, table2], pred?)
+    ```
+  """
   def sieve(tensor_a, [], pred?), do: sieve(tensor_a, pred?)
 
   def sieve(tensor_a, list, pred?) when Nx.is_tensor(tensor_a) and is_list(list) do
@@ -269,14 +287,14 @@ defmodule PostDNN do
   end
 
   @doc """
-  Bounds value in {lower, upper}.
+  Clamp value within {lower, upper}.
   """
-  def bounds(x, {_lower, _upper}=lower_upper) when is_list(x),
+  def clamp(x, {_lower, _upper}=lower_upper) when is_list(x),
     do: x |> Enum.map(&bounds(&1, lower_upper))
   
-  def bounds(x, {lower, upper}) when is_number(x),
+  def clamp(x, {lower, upper}) when is_number(x),
     do: x |> max(lower) |> min(upper)
 
-  def bounds(x, {lower, upper}) when Nx.is_tensor(x),
+  def clamp(x, {lower, upper}) when Nx.is_tensor(x),
     do: x |> Nx.max(lower) |> Nx.min(upper)
 end

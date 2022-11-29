@@ -19,7 +19,7 @@ You can install it by adding `postdnn` to the `mix.exs` dependency list as follo
 ```elixir
 def deps do
   [
-    {:postdnn, "~> 0.1.3"}
+    {:postdnn, "~> 0.1.5"}
   ]
 end
 ```

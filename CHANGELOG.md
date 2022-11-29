@@ -1,5 +1,10 @@
 # Changelog
 
+## Release 0.1.5(Nov 29 2022)
+
+  * Bug Fixes and Other Changes
+    * meshgird/3 dos't work for non transpose.
+
 ## Release 0.1.4(Nov 26 2022)
 
   * Major Features and Improvements
