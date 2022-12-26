@@ -154,6 +154,33 @@ defmodule PostDNN do
   end
 
 
+  @dec """
+  Create a list of address (x,y) in mesh grid.
+  
+  ## Parameters
+  
+    * shape - tupple {width, height} for overall size.
+    * opts
+      * :transpose - return transposed table
+      * :rowfirst - change to row scan first. (default: column scan first)
+      * :index - same as :rowfirst
+  
+  ## Examples
+  
+    ```
+    mesh_address({416,416}, [:index])
+    ```
+  """
+  def mesh_address({w,h}, opts \\ []) when w >= 1 and h >= 1 do
+    if :index in opts or :rowfirst in opts do
+      (for x <- 0..(w-1), y <- 0..(h-1), do: [x, y])
+    else
+      (for y <- 0..(h-1), x <- 0..(w-1), do: [x, y])
+    end
+    |> Nx.tensor(type: :s32)
+    |> (&if :transpose in opts, do: Nx.transpose(&1), else: &1).()
+  end
+  
   @doc """
   Create a priorbox which is a list of the coodinate of the boxes in each grid.
   
@@ -242,8 +269,9 @@ defmodule PostDNN do
     index =
       Nx.argsort(judge, direction: :desc)
       |> Nx.slice_along_axis(0, count)
+      |> Nx.squeeze()
 
-    Nx.take(tensor, index)
+    Nx.take(tensor, index) #|> Nx.squeeze()
   end
 
   @doc """
@@ -282,6 +310,7 @@ defmodule PostDNN do
     index =
       Nx.argsort(judge, direction: :desc)
       |> Nx.slice_along_axis(0, count)
+      |> Nx.squeeze()
 
     Enum.map([tensor_a|list], &Nx.take(&1, index))
   end
